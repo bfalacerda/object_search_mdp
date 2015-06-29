@@ -1,5 +1,5 @@
 from mdp_plan_exec.mdp import Mdp, MdpTransitionDef, MdpPropDef
-from mdp_plan_exec.top_map_mdp import TopMapMdp
+from object_search_mdp.top_map_mdp import TopMapMdp
 
 from itertools import product
 
@@ -39,6 +39,7 @@ class ObjectSearchTopMapMdp(TopMapMdp):
             current_waypoint_index=0
             for (waypoint_name, prob, cost) in zip(waypoints_list, probs_list, costs_list):               
                 var_name = object_name + '_at_' + waypoint_name
+                print "ADDING", var_name
                 self.state_vars.append(var_name)
                 self.state_vars_range[var_name]=(-1,1) #-1, unkown, 0 not found, 1 found
                 self.initial_state[var_name]=-1
