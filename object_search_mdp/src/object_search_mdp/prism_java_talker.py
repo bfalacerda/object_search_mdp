@@ -11,7 +11,8 @@ class PrismJavaTalker(object):
     def __init__(self,port,dir_name,file_name):
         HOST = "localhost"
         PORT = port
-        os.chdir('/opt/prism-robots-dev/prism')
+        prism_dir = os.path.expanduser("~") + '/bruno-prism/prism-robots/prism/'
+        os.chdir(prism_dir)
         os.environ['PRISM_MAINCLASS'] = 'prism.PrismObjectSearch'
         self.java_server=subprocess.Popen(["bin/prism",str(PORT),dir_name, file_name])
         rospy.sleep(1)

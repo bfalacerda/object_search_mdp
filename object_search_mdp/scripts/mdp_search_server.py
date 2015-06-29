@@ -13,6 +13,7 @@ from actionlib_msgs.msg import GoalStatus
 
 from strands_navigation_msgs.msg import NavRoute, ExecutePolicyModeAction, ExecutePolicyModeFeedback, ExecutePolicyModeGoal
 from object_search_mdp.msg import ObjectSearchMdpAction
+from object_search_action.msg import ObjectSearchAction, ObjectSearchGoal
 
 from soma_pcl_segmentation.srv import GetProbabilityAtWaypoint 
 
@@ -34,9 +35,15 @@ class MdpSearchServer(object):
         
         self.top_nav_policy_exec= SimpleActionClient('/topological_navigation/execute_policy_mode', ExecutePolicyModeAction)
         got_server=self.top_nav_policy_exec.wait_for_server(rospy.Duration(1))
+        self.object_search_ac = SimpleActionClient('/search_object', ObjectSearchAction)
+        got_server = got_server and self.object_search_ac.wait_for_server(rospy.Duration(1))
         while not got_server:
-            rospy.loginfo("Waiting for topological navigation execute policy mode action server.")
             got_server=self.top_nav_policy_exec.wait_for_server(rospy.Duration(1))
+            if not got_server:
+                rospy.loginfo("Waiting for topological navigation execute policy mode action server.")
+            #got_server = got_server and self.object_search_ac.wait_for_server(rospy.Duration(1))
+            #if not got_server:
+                #rospy.loginfo("Waiting for sampling based local object search action.")
             if rospy.is_shutdown():
                 return
         
@@ -126,7 +133,8 @@ class MdpSearchServer(object):
                 
             #check if there's more places to look
             current_nav_policy = self.policy.get_current_nav_policy()
-            if current_nav_policy['sources'] == []:
+            print current_nav_policy
+            if current_nav_policy['sources'] == [] or current_nav_policy['sources'][0] == '':
                 break
             
             #execute nav policy
@@ -146,11 +154,44 @@ class MdpSearchServer(object):
                     rospy.logwarn("Unexpected outcome from the topological navigaton execute policy action server. Setting as aborted")
                     self.mdp_nav_as.set_aborted()
                 return
-                
+        rospy.loginfo("Object search over")
         self.mdp_nav_as.set_succeeded()
-
-
+        
     def execute_perceive(self, action_name):
+        #rois = {"FoodStation":6, "GhostKitchen":4, "Room102":7, "Room106":2, "GhostRoom2":3, "GhostRoom1":5}
+        rois = {"WayPoint31":2, "WayPoint27":3, "WayPoint42":5}
+        object_name = action_name.split('_')[1]
+        rospy.loginfo("Executing local search for " + object_name)
+        search_goal = ObjectSearchGoal(waypoint = self.closest_waypoint,
+                                    roi_id = rois[self.closest_waypoint],
+                                    objects = [object_name])
+        #self.object_search_ac.send_goal(search_goal)
+        #self.object_search_ac.wait_for_result()
+        #found_objects = self.object_search_ac.get_result()
+        
+        found_objects = ['cup1']
+        
+        possible_next_states = self.policy.next_states[self.policy.current_state]
+        for state in possible_next_states:
+            for prop in self.policy.flat_states[state]:
+                if object_name in prop and self.policy.flat_states[state][prop] == 1:
+                    success_next_state = state
+                    break
+        for state in possible_next_states:
+            if state != success_next_state:
+                failure_next_state = state
+        
+        if object_name in found_objects:
+            self.policy.current_state = success_next_state
+            rospy.loginfo("Found " + object_name)
+        else:
+            self.policy.current_state = failure_next_state
+            rospy.loginfo("Didn't find " + object_name)
+            
+
+
+
+    def execute_perceive_sim(self, action_name):    
         print "PERCEIVE!! ", action_name
         rospy.sleep(2)
         self.policy.current_state = choice(self.policy.next_states[self.policy.current_state])
