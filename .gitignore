@@ -1,0 +1,9 @@
+*~
+server.log
+*.user
+*.swp
+*.swo
+*.pyc
+*.spyder*
+\#*\#
+
