@@ -158,18 +158,18 @@ class MdpSearchServer(object):
         self.mdp_nav_as.set_succeeded()
         
     def execute_perceive(self, action_name):
-        #rois = {"FoodStation":6, "GhostKitchen":4, "Room102":7, "Room106":2, "GhostRoom2":3, "GhostRoom1":5}
-        rois = {"WayPoint31":2, "WayPoint27":3, "WayPoint42":5}
+        rois = {"FoodStation":6, "GhostKitchen":4, "Room102":7, "Room106":2, "GhostRoom2":3, "GhostRoom1":5}
+        #rois = {"WayPoint31":2, "WayPoint27":3, "WayPoint42":5}
         object_name = action_name.split('_')[1]
         rospy.loginfo("Executing local search for " + object_name)
         search_goal = ObjectSearchGoal(waypoint = self.closest_waypoint,
                                     roi_id = rois[self.closest_waypoint],
                                     objects = [object_name])
-        #self.object_search_ac.send_goal(search_goal)
-        #self.object_search_ac.wait_for_result()
-        #found_objects = self.object_search_ac.get_result()
+        self.object_search_ac.send_goal(search_goal)
+        self.object_search_ac.wait_for_result()
+        found_objects = self.object_search_ac.get_result()
         
-        found_objects = ['cup1']
+        #found_objects = ['cup1']
         
         possible_next_states = self.policy.next_states[self.policy.current_state]
         for state in possible_next_states:
