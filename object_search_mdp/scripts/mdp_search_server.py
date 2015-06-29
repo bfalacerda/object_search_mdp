@@ -160,7 +160,7 @@ class MdpSearchServer(object):
     def execute_perceive(self, action_name):
         rois = {"FoodStation":6, "GhostKitchen":4, "Room102":7, "Room106":2, "GhostRoom2":3, "GhostRoom1":5}
         #rois = {"WayPoint31":2, "WayPoint27":3, "WayPoint42":5}
-        object_name = action_name.split('_')[1]
+        object_name = action_name.strip('perceive_')
         rospy.loginfo("Executing local search for " + object_name)
         search_goal = ObjectSearchGoal(waypoint = self.closest_waypoint,
                                     roi_id = rois[self.closest_waypoint],
@@ -195,7 +195,7 @@ class MdpSearchServer(object):
         print "PERCEIVE!! ", action_name
         rospy.sleep(2)
         self.policy.current_state = choice(self.policy.next_states[self.policy.current_state])
-        object_name =action_name.split('_')[1]
+        object_name =action_name.strip('perceive_')
         prop_name =  'found_' + object_name
         for prop in self.policy.flat_states[self.policy.current_state]:
             if object_name in prop and self.policy.flat_states[self.policy.current_state][prop] == 1:
