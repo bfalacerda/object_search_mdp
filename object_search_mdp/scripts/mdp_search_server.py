@@ -14,6 +14,7 @@ from actionlib_msgs.msg import GoalStatus
 from strands_navigation_msgs.msg import NavRoute, ExecutePolicyModeAction, ExecutePolicyModeFeedback, ExecutePolicyModeGoal
 from object_search_mdp.msg import ObjectSearchMdpAction
 from object_search_action.msg import ObjectSearchAction, ObjectSearchGoal
+from mary_tts.msg import maryttsAction, maryttsGoal
 
 from soma_pcl_segmentation.srv import GetProbabilityAtWaypoint 
 
@@ -33,6 +34,7 @@ class MdpSearchServer(object):
                 return       
         self.get_probs_costs_srv=rospy.ServiceProxy("soma_probability_at_waypoint", GetProbabilityAtWaypoint)
         
+        self.speaker = SimpleActionClient('/speak', maryttsAction)
         self.top_nav_policy_exec= SimpleActionClient('/topological_navigation/execute_policy_mode', ExecutePolicyModeAction)
         got_server=self.top_nav_policy_exec.wait_for_server(rospy.Duration(1))
         self.object_search_ac = SimpleActionClient('/search_object', ObjectSearchAction)
@@ -138,7 +140,9 @@ class MdpSearchServer(object):
                 break
             
             #execute nav policy
-            rospy.loginfo('Executing navigation to next search node')
+            target_waypoint = self.policy.get_nav_policy_target()
+            self.speaker.send_goal(maryttsGoal(text="I'm going to check for objects in " + target_waypoint + '.'))
+            self.speaker.wait_for_result()
             nav_policy_goal = NavRoute(source = current_nav_policy['sources'], edge_id = current_nav_policy['actions'])
             self.policy_mode_pub.publish(nav_policy_goal)
             self.top_nav_policy_exec.send_goal(ExecutePolicyModeGoal(route = nav_policy_goal), feedback_cb = self.top_nav_feedback_cb)
@@ -154,15 +158,21 @@ class MdpSearchServer(object):
                     rospy.logwarn("Unexpected outcome from the topological navigaton execute policy action server. Setting as aborted")
                     self.mdp_nav_as.set_aborted()
                 return
-        rospy.loginfo("Object search over")
+        self.speaker.send_goal(maryttsGoal(text="I'm done with searching for objects!"))
+        self.speaker.wait_for_result()
         self.mdp_nav_as.set_succeeded()
         
     def execute_perceive(self, action_name):
         object_name = ''
+        object_speech = ''
         object_split = action_name.split('_')
         for word in object_split[1:]:
+            object_speech = object_speech + word + ' '
             object_name = object_name + word + '_'
         object_name =object_name[:-1]
+        
+        self.speaker.send_goal(maryttsGoal(text="I'm going to look for the " + object_speech + '!'))
+        self.speaker.wait_for_result()
         #robot
         rois = {"FoodStation":"6", "GhostKitchen":"4", "Room102":"7", "Room106Exit":"2", "GhostRoom2":"3", "GhostRoom1":"5"}
         rospy.loginfo("Executing local search for " + object_name)
@@ -176,7 +186,7 @@ class MdpSearchServer(object):
         ##sim
         #rospy.loginfo("Executing SIM search for " + object_name)
         #rois = {"WayPoint31":2, "WayPoint27":3, "WayPoint42":5}
-        #found_objects = ['cup1', 'mug1']
+        #found_objects = ['cup1']
         #rospy.sleep(3)
         
         possible_next_states = self.policy.next_states[self.policy.current_state]
@@ -191,10 +201,12 @@ class MdpSearchServer(object):
         
         if object_name in found_objects:
             self.policy.current_state = success_next_state
-            rospy.loginfo("Found " + object_name)
+            self.speaker.send_goal(maryttsGoal(text="I just found the " + object_speech + '!'))
+            self.speaker.wait_for_result()
         else:
             self.policy.current_state = failure_next_state
-            rospy.loginfo("Didn't find " + object_name)
+            self.speaker.send_goal(maryttsGoal(text="I didn't find the " + object_speech + '.'))
+            self.speaker.wait_for_result()
             
 
 

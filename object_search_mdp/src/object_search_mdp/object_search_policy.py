@@ -49,6 +49,16 @@ class ObjectSearchPolicy(TopMapMdp):
                 print "Updated MDP state correctly"
                 return
         print "Update mdp state error!"
+        
+    def get_nav_policy_target(self):
+        state = self.current_state
+        action = 'null'
+        while True:
+            if 'perceive_' in self.actions[state]:
+                return action.split('_')[1]          
+            action = self.actions[state]
+            state = choice(self.next_states[state])
+                                       
     
     def get_current_nav_policy(self):
         sources = []
