@@ -129,8 +129,9 @@ class MdpSearchServer(object):
         while True:
             #check for execution of perceive action
             next_action = self.policy.actions[self.policy.current_state]
+            wp_name = self.closest_node
             while 'perceive_' in next_action:
-                self.execute_perceive(next_action)
+                self.execute_perceive(next_action, wp_name)
                 next_action = self.policy.actions[self.policy.current_state]
                 
             #check if there's more places to look
@@ -162,7 +163,7 @@ class MdpSearchServer(object):
         self.speaker.wait_for_result()
         self.mdp_nav_as.set_succeeded()
         
-    def execute_perceive(self, action_name):
+    def execute_perceive(self, action_name, wp_name):
         object_name = ''
         object_speech = ''
         object_split = action_name.split('_')
@@ -176,8 +177,8 @@ class MdpSearchServer(object):
         #robot
         rois = {"FoodStation":"6", "GhostKitchen":"4", "Room102":"7", "Room106Exit":"2", "GhostRoom2":"3", "GhostRoom1":"5"}
         rospy.loginfo("Executing local search for " + object_name)
-        search_goal = ObjectSearchGoal(waypoint = self.closest_waypoint,
-                                    roi_id = rois[self.closest_waypoint],
+        search_goal = ObjectSearchGoal(waypoint = wp_name,
+                                    roi_id = rois[wp_name],
                                     objects = [object_name])
         self.object_search_ac.send_goal(search_goal)
         self.object_search_ac.wait_for_result()
