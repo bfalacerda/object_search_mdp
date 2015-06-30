@@ -134,13 +134,18 @@ class ObjectSearchPolicy(TopMapMdp):
     def get_initial_state(self, labels_file):
         f = open(labels_file, 'r')
         f.readline()
+        found = False
         for line in f:
             line_array = line.split(' ')
             if line_array[-1] == '1\n':
                 final_state_index = int(line_array[0].strip(':'))
+                found = True
                 break
         f.close()
-        self.final_automaton_state = self.flat_states[final_state_index]['_da']
+        if found:
+            self.final_automaton_state = self.flat_states[final_state_index]['_da']
+        else:
+            self.final_automaton_state = 1
         
         if self.final_automaton_state == 0:
             initial_automaton_state = self.n_da_states
