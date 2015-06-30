@@ -101,12 +101,11 @@ class TopMapMdp(Mdp):
         if epoch is None:
             epoch=rospy.Time.now()
         predictions=self.get_edge_estimates(epoch)
-        if len(predictions.edge_ids) != self.n_actions:
-            rospy.logwarn("Did not receive travel time estimations for all edges, the total navigatio expected values will not be correct")
+        #TODO TESTAR ISTO
         for (edge, prob, duration) in zip(predictions.edge_ids, predictions.probs, predictions.durations):
             index=self.actions.index(edge)
             transition=self.transitions[index]
-            self.transitions[index].prob_post_conds=[(prob, dict(transition.prob_post_conds[0][1])), (1-prob, dict(transition.pre_conds))]
+            #self.transitions[index].prob_post_conds=[(prob, dict(transition.prob_post_conds[0][1])), (1-prob, dict(transition.pre_conds))]
             self.transitions[index].rewards["time"]=duration.to_sec()       
         self.write_prism_model(file_name)
         
